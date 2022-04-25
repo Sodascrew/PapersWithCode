@@ -323,11 +323,11 @@ def optimize_parameters(self):
     self.optimizer_D.step()  # update D_A and D_B's weights
 ```
 
-## loss
+### loss
 
 (具体计算在上文 CycleGAN model Class 其余method 中)
 
-### Adversarial loss
+#### Adversarial loss
 
 gan_mode=vanilla时使用cross entropy（和paper中最初给的损失函数相同）
 
@@ -409,7 +409,7 @@ class GANLoss(nn.Module):
         return loss
 ```
 
-### Cycle loss 和 Identity loss
+#### Cycle loss 和 Identity loss
 
 两者均为L1 loss
 
