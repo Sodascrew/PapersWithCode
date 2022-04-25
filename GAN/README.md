@@ -73,12 +73,12 @@ class Discriminator(nn.Module):
 ### loss
 
 paper中给出的loss如下：
-$$
-\min _{G} \max _{D} V(D, G)=\mathbb{E}_{\boldsymbol{x} \sim p_{\text {data }}(\boldsymbol{x})}[\log D(\boldsymbol{x})]+\mathbb{E}_{\boldsymbol{z} \sim p_{\boldsymbol{z}}(\boldsymbol{z})}[\log (1-D(G(\boldsymbol{z})))]
-$$
+
+<img src="https://latex.codecogs.com/svg.image?\min&space;_{G}&space;\max&space;_{D}&space;V(D,&space;G)=\mathbb{E}_{\boldsymbol{x}&space;\sim&space;p_{\text&space;{data&space;}}(\boldsymbol{x})}[\log&space;D(\boldsymbol{x})]&plus;\mathbb{E}_{\boldsymbol{z}&space;\sim&space;p_{\boldsymbol{z}}(\boldsymbol{z})}[\log&space;(1-D(G(\boldsymbol{z})))]" />
+
 在实际应用中，在训练初期，G生成图片效果很差，因此D能很好的判别，即$D(G(z))$很小，那么$log(1-D(G(z)))$则会饱和，可以通过 $ \max _{G}   log(D(G(z))) $  
 
-代替$\min _{G}  log(1-D(G(z)))$ 。
+代替<img src="https://latex.codecogs.com/svg.image?\inline&space;\min&space;_{G}&space;&space;log(1-D(G(z)))" />。
 
 ```python
 adversarial_loss = torch.nn.BCELoss()    # measures the Binary Cross Entropy between the target and the input probabilities

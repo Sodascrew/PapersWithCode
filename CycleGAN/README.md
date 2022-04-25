@@ -1,4 +1,4 @@
-# CycleGAN for style transfer
+CycleGAN for style transfer
 
 ## Reference
 
@@ -22,30 +22,21 @@ GAN模型由Generator和Discriminator两个网络模型组成，在unconditional
 因此loss由 adversarial loss 和 cycle consistency loss 两部分组成。
 
 adversarial loss 和GAN中一致（F映射的loss形式相同）
-$$
-\begin{aligned}
-\mathcal{L}_{\mathrm{GAN}}\left(G, D_{Y}, X, Y\right) &=\mathbb{E}_{y \sim p_{\text {data }}(y)}\left[\log D_{Y}(y)\right]
-+\mathbb{E}_{x \sim p_{\text {data }}(x)}\left[\log \left(1-D_{Y}(G(x))\right]\right.
-\end{aligned}
-$$
+
+<img src="https://latex.codecogs.com/svg.image?\begin{aligned}\mathcal{L}_{\mathrm{GAN}}\left(G,&space;D_{Y},&space;X,&space;Y\right)&space;&=\mathbb{E}_{y&space;\sim&space;p_{\text&space;{data&space;}}(y)}\left[\log&space;D_{Y}(y)\right]&plus;\mathbb{E}_{x&space;\sim&space;p_{\text&space;{data&space;}}(x)}\left[\log&space;\left(1-D_{Y}(G(x))\right]\right.\end{aligned}" />
+
 cycle consistency loss 如下
-$$
-\begin{aligned}
-\mathcal{L}_{\text {cyc }}(G, F) &=\mathbb{E}_{x \sim p_{\text {data }}(x)}\left[\|F(G(x))-x\|_{1}\right]+\mathbb{E}_{y \sim p_{\text {data }}(y)}\left[\|G(F(y))-y\|_{1}\right]
-\end{aligned}
-$$
+
+<img src="https://latex.codecogs.com/svg.image?\begin{aligned}\mathcal{L}_{\text&space;{cyc&space;}}(G,&space;F)&space;&=\mathbb{E}_{x&space;\sim&space;p_{\text&space;{data&space;}}(x)}\left[\|F(G(x))-x\|_{1}\right]&plus;\mathbb{E}_{y&space;\sim&space;p_{\text&space;{data&space;}}(y)}\left[\|G(F(y))-y\|_{1}\right]\end{aligned}" />
+
 因此完整的loss如下
-$$
-\begin{aligned}
-\mathcal{L}\left(G, F, D_{X}, D_{Y}\right) &=\mathcal{L}_{\mathrm{GAN}}\left(G, D_{Y}, X, Y\right) \\
-&+\mathcal{L}_{\mathrm{GAN}}\left(F, D_{X}, Y, X\right) \\
-&+\lambda \mathcal{L}_{\mathrm{cyc}}(G, F)
-\end{aligned}
-$$
+
+<img src="https://latex.codecogs.com/svg.image?\begin{aligned}\mathcal{L}\left(G,&space;F,&space;D_{X},&space;D_{Y}\right)&space;&=\mathcal{L}_{\mathrm{GAN}}\left(G,&space;D_{Y},&space;X,&space;Y\right)&space;\\&&plus;\mathcal{L}_{\mathrm{GAN}}\left(F,&space;D_{X},&space;Y,&space;X\right)&space;\\&&plus;\lambda&space;\mathcal{L}_{\mathrm{cyc}}(G,&space;F)\end{aligned}" />
+
 特别地，在 Photo generation from paintings (见5.2 Applications)任务中，为了保持生成前后的图片色彩构成的一致性，引入了 identity loss，如下
-$$
-\mathcal{L}_{\text {identity }}(G, F)=\mathbb{E}_{y \sim p_{\text {data }}(y)}\left[\|G(y)-y\|_{1}\right]+   \mathbb{E}_{x \sim p_{\text {data }}(x)}\left[\|F(x)-x\|_{1}\right] .
-$$
+
+<img src="https://latex.codecogs.com/svg.image?\mathcal{L}_{\text&space;{identity&space;}}(G,&space;F)=\mathbb{E}_{y&space;\sim&space;p_{\text&space;{data&space;}}(y)}\left[\|G(y)-y\|_{1}\right]&plus;&space;&space;&space;\mathbb{E}_{x&space;\sim&space;p_{\text&space;{data&space;}}(x)}\left[\|F(x)-x\|_{1}\right]" />
+
 在实现中，对于adversarial loss，使用均方误差代替了log。
 
 > we replace the negative log likelihood objective by a least-squares loss [35]. This loss is more stable during training and generates higher quality results.(paper 4.Implementation training details)
