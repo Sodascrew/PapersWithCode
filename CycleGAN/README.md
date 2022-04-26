@@ -419,9 +419,159 @@ self.criterionCycle = torch.nn.L1Loss()
 self.criterionIdt = torch.nn.L1Loss()
 ```
 
+### dataset
+
+#### transform
+
+在base_dataset.py中定义了get_transform()，默认的transform包含 resize (bicubic) and crop, random flip to data argumentation, convert to tensor and normalize
+
+```python
+'''in base_dataset.py---get_transform(...)'''
+'''resize and crop, random flip to data argumentation,convert to tensor and normalize'''
+def get_transform(opt, params=None, grayscale=False, method=Image.BICUBIC, convert=True):
+    transform_list = []
+    if grayscale:
+        transform_list.append(transforms.Grayscale(1))
+    if 'resize' in opt.preprocess:
+        osize = [opt.load_size, opt.load_size]
+        transform_list.append(transforms.Resize(osize, method))
+    elif 'scale_width' in opt.preprocess:
+        transform_list.append(transforms.Lambda(lambda img: __scale_width(img, opt.load_size, opt.crop_size, method)))
+
+    if 'crop' in opt.preprocess:
+        if params is None:
+            transform_list.append(transforms.RandomCrop(opt.crop_size))
+        else:
+            transform_list.append(transforms.Lambda(lambda img: __crop(img, params['crop_pos'], opt.crop_size)))
+
+    if opt.preprocess == 'none':
+        transform_list.append(transforms.Lambda(lambda img: __make_power_2(img, base=4, method=method)))
+
+    if not opt.no_flip:
+        if params is None:
+            transform_list.append(transforms.RandomHorizontalFlip())
+        elif params['flip']:
+            transform_list.append(transforms.Lambda(lambda img: __flip(img, params['flip'])))
+
+    if convert:
+        transform_list += [transforms.ToTensor()]
+        if grayscale:
+            transform_list += [transforms.Normalize((0.5,), (0.5,))]
+        else:
+            transform_list += [transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+    return transforms.Compose(transform_list)
+```
+
+#### define class UnalignedDataset
+
+```python
+'''in unaligned_dataset.py'''
+class UnalignedDataset(BaseDataset):
+    """
+    This dataset class can load unaligned/unpaired datasets.
+
+    It requires two directories to host training images from domain A '/path/to/data/trainA'
+    and from domain B '/path/to/data/trainB' respectively.
+    You can train the model with the dataset flag '--dataroot /path/to/data'.
+    Similarly, you need to prepare two directories:
+    '/path/to/data/testA' and '/path/to/data/testB' during test time.
+    """
+
+    def __init__(self, opt):
+        """Initialize this dataset class.
+
+        Parameters:
+            opt (Option class) -- stores all the experiment flags; needs to be a subclass of BaseOptions
+        """
+        BaseDataset.__init__(self, opt)
+        self.dir_A = os.path.join(opt.dataroot, opt.phase + 'A')  # create a path '/path/to/data/trainA'
+        self.dir_B = os.path.join(opt.dataroot, opt.phase + 'B')  # create a path '/path/to/data/trainB'
+
+        self.A_paths = sorted(make_dataset(self.dir_A, opt.max_dataset_size))   # load images from '/path/to/data/trainA'  返回图片地址list
+        self.B_paths = sorted(make_dataset(self.dir_B, opt.max_dataset_size))    # load images from '/path/to/data/trainB'
+        self.A_size = len(self.A_paths)  # get the size of dataset A
+        self.B_size = len(self.B_paths)  # get the size of dataset B
+        btoA = self.opt.direction == 'BtoA'
+        input_nc = self.opt.output_nc if btoA else self.opt.input_nc       # get the number of channels of input image
+        output_nc = self.opt.input_nc if btoA else self.opt.output_nc      # get the number of channels of output image
+        self.transform_A = get_transform(self.opt, grayscale=(input_nc == 1))
+        self.transform_B = get_transform(self.opt, grayscale=(output_nc == 1))
+
+    def __getitem__(self, index):
+        """Return a data point and its metadata information.
+
+        Parameters:
+            index (int)      -- a random integer for data indexing
+
+        Returns a dictionary that contains A, B, A_paths and B_paths
+            A (tensor)       -- an image in the input domain
+            B (tensor)       -- its corresponding image in the target domain
+            A_paths (str)    -- image paths
+            B_paths (str)    -- image paths
+        """
+        A_path = self.A_paths[index % self.A_size]  # make sure index is within then range
+        if self.opt.serial_batches:   # make sure index is within then range
+            index_B = index % self.B_size
+        else:   # randomize the index for domain B to avoid fixed pairs.
+            index_B = random.randint(0, self.B_size - 1)
+        B_path = self.B_paths[index_B]
+        A_img = Image.open(A_path).convert('RGB')
+        B_img = Image.open(B_path).convert('RGB')
+        # apply image transformation
+        A = self.transform_A(A_img)
+        B = self.transform_B(B_img)
+
+        return {'A': A, 'B': B, 'A_paths': A_path, 'B_paths': B_path}
+
+    def __len__(self):
+        """Return the total number of images in the dataset.
+
+        As we have two datasets with potentially different number of images,
+        we take a maximum of
+        """
+        return max(self.A_size, self.B_size)
+```
+
+### train 
+
+> For all the experiments, we set λ = 10 in Equation 3. We use the Adam solver [26] with a batch size of 1. All networks were trained from scratch with a learning rate of 0.0002. We keep the same learning rate for the first 100 epochs and linearly decay the rate to zero over the next 100 epochs. Please see the appendix (Section 7) for more details about the datasets, architectures, and training procedures.(paper 4.Implementation training details)
 
 
 
+### Apply a pre-trained model
 
+#### implementation
 
+详情见https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix
+
+可在colab上运行[Google Colab implementation](https://colab.research.google.com/github/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/CycleGAN.ipynb)
+
+```bash
+bash ./scripts/download_cyclegan_model.sh [model_name]  #download model
+#style transfer pre-trained model:style_monet, style_cezanne, style_ukiyoe, style_vangogh,
+```
+
+在datasets目录下创建photo_to_transfer目录，用于存放待transfer的图片
+
+```bash
+python test.py --dataroot datasets/photo_to_transfer --name [model_name]_pretrained --model test --no_dropout
+```
+
+生成的图片将存在于result对应模型的目录下
+
+#### result
+
+原图来源：https://www.xidian.edu.cn/xxgk/xydy.htm
+
+对原图按比例resize到最短边256，然后crop成256x256的图片输入模型
+
+部分结果如下图所示：
+
+<center class="half">
+    <img src="./result/xidian_4.png" width="256" alt="original photo 4" title="origin"/>
+    <img src="./result/xidian_4_cezanne.png" width="256" alt="photo 4 cezanne" title="cezanne"/>
+    <img src="./result/xidian_4_monet.png" width="256" alt="photo 4 monet" title="monet"/>
+    <img src="./result/xidian_4_ukiyoe.png" width="256" alt="photo 4 ukiyoe" title="ukiyoe"/>
+    <img src="./result/xidian_4_vangogh.png" width="256" alt="photo 4 vangogh" title="vangogh"/>
+</center>
 
