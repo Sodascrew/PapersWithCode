@@ -47,6 +47,8 @@ cycle consistency loss 如下
 
 > For the discriminator networks we use 70 × 70 PatchGANs [22, 30, 29], which aim to classify whether 70 × 70 overlapping image patches are real or fake. Such a patch-level discriminator architecture has fewer parameters than a full-image discriminator and can work on arbitrarily-sized images in a fully convolutional fashion.(paper 4.Implementation Network Architecture)
 
+image style transfer的相关模型见[relate models](https://github.com/Sodascrew/PapersWithCode/tree/master/CycleGAN/docs/relate_models.md)
+
 ## Code
 
 源码源自：https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix
@@ -574,4 +576,3 @@ python test.py --dataroot datasets/photo_to_transfer --name [model_name]_pretrai
     <img src="./result/xidian_4_ukiyoe.png" width="256" alt="photo 4 ukiyoe" title="ukiyoe"/>
     <img src="./result/xidian_4_vangogh.png" width="256" alt="photo 4 vangogh" title="vangogh"/>
 </center>
-
