@@ -18,13 +18,13 @@
 
 给定假设：高光谱图像中的每个像元都可以近似认为是图像中各个端元（endmember）的线性混合。得到线性光谱混合模型如下：
 
-![linear mixture model](./photo/linear mixture model.png)
+![linear mixture model](./photo/linear_mixture_model.png)
 
 线性解混就是在已知所有端元的情况下求出每个图像像元中各个端元所占的比例，从而得到反映每个端元在图像中分布情况的比例系数图。
 
 线性光谱混合模型的矩阵表示如下：（A为端元光谱矩阵 endmember matrix，B为各端元光谱丰度 endmember abundance）
 
-![matrix representation](./photo/matrix representation.png)
+![matrix representation](./photo/matrix_representation.png)
 
 线性光谱解混主要由两个步骤构成：
 
