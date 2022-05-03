@@ -59,9 +59,65 @@ paper：[Convolutional Autoencoder for Spectral–Spatial Hyperspectral Unmixing
 
 对于此问题，求解目标为上式中的 endmember matrix M 以及每个像元对应的abundances Sp。
 
-通过一个CNN autoencoder，学习输入的低维特征表示（size不变，通道数降低至端元数R），经过softmax后（符合sum-to-one条件）视作R个端元的丰度图，同时将decoder采用1x1卷积（线性，符合LMM），将通道数变回输入的谱带数B，学习到的权重即视作矩阵M。
+通过一个CNN autoencoder，学习输入的低维特征表示（size不变，通道数降低至端元数R），经过softmax后（符合sum-to-one条件）视作R个端元的丰度图，同时将decoder采用kernel size为fXf的卷积（线性激活，符合LMM），将通道数变回输入的谱带数B，学习到的权重即视作矩阵M。
 
 具体模型如下图所示：
+
+![model](./photo/model.png)
+
+其中Abundance maps通道i上的像素点的值对应该像元中端元i所占的比例。而最后一层网络的权重与上文spectral-spatial model中矩阵的对应关系大致如下：
+
+![model interpretation](./photo/model_interpretation.jpg)
+
+为了衡量autoencoder输入输出的相似性，使用了 the spectral angle distance(SAD) ，对于每一个像元有：
+
+<img src="https://latex.codecogs.com/svg.image?J_{\mathrm{SAD}}(\boldsymbol{x},&space;\hat{\boldsymbol{x}})=\arccos&space;\left(\frac{\langle\boldsymbol{x},&space;\hat{\boldsymbol{x}}\rangle}{\|\boldsymbol{x}\|_{2}\|\hat{\boldsymbol{x}}\|_{2}}\right)"/>
+
+对单个patch：
+
+<img src="https://latex.codecogs.com/svg.image?\mathcal{L}^{(i)}=\frac{1}{\left|\mathcal{B}^{i}\right|}&space;\sum_{\boldsymbol{x}_{p}&space;\in&space;\mathcal{B}^{i}}&space;J_{\mathrm{SAD}}\left(\boldsymbol{x}_{p},&space;\hat{\boldsymbol{x}}_{p}\right)"/>
+
+因此总的损失函数为N个patch求和：
+
+<img src="https://latex.codecogs.com/svg.image?\mathcal{L}=\sum_{i=1}^{N}&space;\mathcal{L}^{(i)}"/>
+
+此loss只衡量了两向量方向的相似性，与尺度信息无关(sclae invariant)，对于端元提取效果好，但混合像元分解即求解丰度图效果并非最佳。同时由于使用了batch normalization、learkyReLU以及softmax，丰度图中的值倾向于0或1。
+
+> ​	This loss, although very good for endmember extraction, is not an optimal metric for data reconstruction since it is scale invariant. It is possible that SAD loss leads to **higher variance in the abundance estimation** than is explainable by considering only the variance in the quality of the extracted endmembers. Still, methods using SAD loss can achieve fairly good results for abundance estimation as the results of the MTAEU method demonstrate.(paper Ⅲ.Experiments A.Methodolody and Performance Metrics)
+>
+> ​	The quality of extracted endmembers weighs more heavily in our evaluation of the method than the quality of the abundance maps. This is because **the abundance maps** produced by our method tend to be very **binary**, that is abundances are either very low or very high, almost like classification maps. This happens because of batch normalization and the fact that we are using a ReLU like activation and the softmax function to enforce the ASC constraint.(paper Ⅲ.Experiments A.Methodolody and Performance Metrics)
+
+对于此问题，可以使用上述模型用于提取端元，再用另一个的autoencoder（decoder的权重固定为上一模型得到的端元矩阵，不适用batch normalization）进行训练得到新的丰度图。(model CNNAEU2)
+
+> As was mentioned at the start of this section, the abundance maps produced by CNNAEU are very intense looking, that is both very **sparse and binary**. It is possible to extend the method so it **refines the abundance maps after extracting the endmembers**. This could be done using an autoencoder in serial with the unmixing one, which has **its decoder’s weights set to be the extracted endmember matrix and made nontrainable so they are fixed, and does not use batch normalization layers**. By training it for a few epochs, it will produce abundance maps which are not nearly as binary looking.(paper Ⅲ.Experiments F.Abundance Maps)
+
+## Dataset
+
+### Samson
+
+Samson dataset来源：[Data - rslab (ut.ac.ir)](https://rslab.ut.ac.ir/data)
+
+读取samson_1.mat，可得到训练数据如下：
+
+![train data](./photo/train_data.png)
+
+'V'对应shape为(156, 9025)的训练数据
+
+读取end3.mat，可得到标签如下：
+
+![label](./photo/label.png)
+
+其中，‘A’对应shape为(3, 9025)的abundance map，‘M'对应shape为(156, 3)的reference endmembers
+
+## Code
+
+
+
+
+
+参考：[dv-fenix/HyperspecAE: Code for the experiments on the Samson Dataset as presented in the paper: Hyperspectral Unmixing Using a Neural Network Autoencoder (Palsson et al. 2018) (github.com)](https://github.com/dv-fenix/HyperspecAE)
+
+
 
 ## Reference
 
