@@ -259,7 +259,7 @@ class SAD(nn.Module):
             input_norm = torch.sqrt(torch.bmm(input.view(self.batch_size,1,-1), input.view(self.batch_size,-1,1)))
             target_norm = torch.sqrt(torch.bmm(target.view(self.batch_size,1,-1), target.view(self.batch_size,-1,1)))
             summation = torch.bmm(input.view(self.batch_size,1,-1), target.view(self.batch_size,-1,1))
-   			angle = torch.arccos( torch.clamp((summation+self.eps) / (input_norm*target_norm+self.eps),min=-1+self.eps ,max=1-self.eps) ) #clamp否则会出现nan
+            angle = torch.arccos( torch.clamp((summation+self.eps) / (input_norm*target_norm+self.eps),min=-1+self.eps ,max=1-self.eps) ) #clamp否则会出现nan
 
 
         except ValueError:
