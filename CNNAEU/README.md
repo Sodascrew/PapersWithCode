@@ -329,9 +329,13 @@ for i in range(3):
 
 
 
-由于模型输入图片大小为(40,40)，对于完整图片预测得到abundance map时需要将原始图片crop成若干(40,40)且存在重叠的子图，分别预测，再对应位置拼接起来。因为存在重叠，需要进行一次通道方向的归一化。
+虽然训练时模型输入图片大小为(40,40)，但由于模型是全卷积神经网络，在预测时并不限制输入图片的大小，直接将完整的图片输入到网络，得到的decode即对应预测的abundance map。
 
 ```python
+model = CNNAE()
+model.load_state_dict(torch.load('./model/CNNAEU_8_bad.pth'))
+model.to('cpu')
+model.eval()
 '''读取输入图片'''
 img_folder = './Data_Matlab/'
 training_file = 'samson_1.mat'
@@ -339,31 +343,15 @@ PATH = os.path.join(img_folder, training_file)
 train_data = scipy.io.loadmat(PATH)
 image = train_data['V'].T.reshape(95,95,156)   #原图像(95,95,156)
 image_tensor = torch.from_numpy(image)
-image_tensor = image_tensor.permute(2,0,1).contiguous().view(1,156,95,95)
+image_tensor = image_tensor.permute(2,0,1).unsqueeze(0)   #torch.Size([1, 156, 95, 95])
 
-'''确定crop时的左上角坐标'''
-point_list = [0,30,55]
-crop_point_list = []    #crop图片起始点
-for item in point_list:
-    for tmp in point_list:
-        crop_point_list.append((item,tmp))
-        
-crop_size = (40,40)
-predict_abundance = torch.zeros((3,95,95))
-
-'''crop 分别预测 并将结果拼接'''
-for crop_point in crop_point_list:
-    croped_image = torchvision.transforms.functional.crop(image_tensor,*crop_point,*crop_size)
-    encode,_ = model(croped_image.float())
-    (x,y) = crop_point
-    predict_abundance[:,x:x+40,y:y+40] += encode[0]
-    
-predict_abundance = predict_abundance / predict_abundance.sum(dim=0).view(1,95,95)  #ASC 将重叠区域归一化
+predict_abundance,_ = model(image_tensor.float())
+predict_abundance = predict_abundance[0]
 
 '''visualization'''
 fig = plt.figure(figsize=(15, 5))
 for i in range(3):
-    fig.add_subplot(rows, columns, i+1)
+    fig.add_subplot(1, 3, i+1)
     plt.imshow(predict_abundance[i].detach().T)
     plt.axis('off')
 plt.show()

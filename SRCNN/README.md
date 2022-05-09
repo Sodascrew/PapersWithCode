@@ -32,6 +32,8 @@ The sparse-coding-based methods 是external example-based SR methods中具有代
 
 发现 The sparse-coding-based methods 的每一步都可以通过卷积运算实现，并且在第二步的映射中，从n1系数得到n2系数需要迭代求解，而在CNN中只需一次前向传播，速度更快；同时CNN可以实现端到端模型，更加简便。基于此，提出了SRCNN。
 
+将图片先经过双线性插值法上采样到期望的大小。
+
 ![SRCNN_model](./photo/SRCNN_model.png)
 
 上图中三步骤对应的数学表达式如下：
@@ -51,9 +53,11 @@ loss选择MSE：
 
 ## Code
 
+参考：[GuoPingPan/DeepLearing-Unet-SRCNN: The project is aiming to use Unet to deal with MSRCv2 Dataset and SRCNN to deal with BSDS500. (github.com)](https://github.com/GuoPingPan/DeepLearing-Unet-SRCNN)
+
 
 
 ## Reference
 
 * [Image Super-Resolution Using Deep Convolutional Networks 1501.00092v3.pdf (arxiv.org)](https://arxiv.org/pdf/1501.00092v3.pdf)
-
+* [GuoPingPan/DeepLearing-Unet-SRCNN: The project is aiming to use Unet to deal with MSRCv2 Dataset and SRCNN to deal with BSDS500. (github.com)](https://github.com/GuoPingPan/DeepLearing-Unet-SRCNN)
