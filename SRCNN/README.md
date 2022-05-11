@@ -55,6 +55,60 @@ loss选择MSE：
 
 参考：[GuoPingPan/DeepLearing-Unet-SRCNN: The project is aiming to use Unet to deal with MSRCv2 Dataset and SRCNN to deal with BSDS500. (github.com)](https://github.com/GuoPingPan/DeepLearing-Unet-SRCNN)
 
+### dataset
+
+* 训练集中包含的图像共300张,视作标签图像(ground truth),共有两种尺寸:(481,321)或(321,481),读取的时候舍去最后一行和最后一列,并且对于高大于宽的图片进行90度翻转,使得所有训练图片size相同.
+* 训练图像:对标签图像进行步长为2的采样,得到低分辨率的图片,再进行双线性插值upscale到原始尺寸作为网络的输入
+
+```python
+class BSDS500_Dataset(torch.utils.data.Dataset):
+    def __init__(self, img_dir):
+        super(BSDS500_Dataset, self).__init__()
+        self.img_dir = img_dir
+        self.img_path = glob.glob1(img_dir,'*.jpg')
+        
+    
+    def __len__(self):
+        return len(self.img_path)
+    
+    def __getitem__(self, idx):
+        im_Y = cv2.imread(os.path.join(self.img_dir,self.img_path[idx]))[:-1,:-1,[2,1,0]]
+        
+        h_y,w_y,_ = im_Y.shape
+        if h_y>w_y:
+            im_Y = np.rot90(im_Y).copy()    #高大于宽的图片进行逆时针90度旋转
+        
+        im_X = im_Y[::2,::2].copy()  #获得原始的训练image(未双线性插值upscale)  切片方式[开始：结束：步长]，其中开始和结束可省略 
+        h,w,_ = im_X.shape
+        im_bic = cv2.resize(im_X, (2*w,2*h), interpolation=cv2.INTER_CUBIC)   #双线性插值upscale 得到网络输入
+        
+        X = torch.from_numpy(im_bic).permute(2,0,1).float() / 255.0
+        Y = torch.from_numpy(im_Y).permute(2,0,1).float() / 255.0
+        
+        return X,Y
+```
+
+### model
+
+```python
+class SRCNN(nn.Module):
+    def __init__(self,in_channels=3):
+        super(SRCNN, self).__init__()
+
+        self.patch_extraction = nn.Conv2d(in_channels=in_channels,out_channels=64,kernel_size=9,padding=4)
+        self.non_linear_mapping = nn.Conv2d(in_channels=64,out_channels=32,kernel_size=1)
+        self.reconstruction = nn.Conv2d(in_channels=32,out_channels=in_channels,kernel_size=5,padding=2)
+
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self,x):
+        output = self.relu(self.patch_extraction(x))
+        output = self.relu(self.non_linear_mapping(output))
+        output = self.reconstruction(output)
+
+        return output
+```
+
 
 
 ## Reference
